@@ -2,7 +2,7 @@
 
 PLCs = [
     {
-        'ip': "192.168.0.**",
+        'ip': "***.***.0.**",
         'rack': 0,
         'slot': 1,
         'password': 'CAMBIAR_POR_TU_PASSWORD',
