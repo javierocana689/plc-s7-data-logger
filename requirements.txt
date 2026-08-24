@@ -1,0 +1,5 @@
+# Dependencias del proyecto
+python-snap7==3.0.0
+
+# Para la futura vía OPC-UA (aún no usada en el código actual)
+# asyncua==2.0
