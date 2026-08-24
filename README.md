@@ -5,17 +5,14 @@ Lee señales de los PLCs mediante el protocolo **S7comm** (sobre TCP/IP, puerto 
 usando la librería [`python-snap7`](https://python-snap7.readthedocs.io/) y las
 guarda en ficheros CSV diarios, uno por PLC.
 
-> Proyecto desarrollado en un entorno industrial (planta de EMASA) sobre un PC
-> Windows aislado de la red. Este repositorio recoge la evolución del código a lo
-> largo de varias iteraciones, de la versión más simple a la más completa.
+
 
 ---
 
 ## ⚠️ Nota de seguridad
 
 Este repositorio es **público**, así que **no contiene datos reales**. En los
-ficheros `config.py` las IPs aparecen enmascaradas (`192.168.0.**`,
-`10.240.***.***`) y la contraseña del PLC es un marcador (`CAMBIAR_POR_TU_PASSWORD`).
+ficheros `config.py` las IPs aparecen enmascaradas y la contraseña del PLC es un marcador (`CAMBIAR_POR_TU_PASSWORD`).
 
 Antes de ejecutar el programa debes sustituir esos valores por los reales de tu
 instalación. **Nunca subas a un repositorio público la IP interna real ni la
