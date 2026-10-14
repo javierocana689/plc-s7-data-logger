@@ -1,0 +1,23 @@
+# Configuración local con datos reales (IP / contraseña). NUNCA subir.
+config.json
+
+# Artefactos de compilación
+build/
+*.o
+*.obj
+*.exe
+*.out
+
+# Librería nativa snap7 (la pone cada quien localmente)
+third_party/snap7/
+
+# Datos generados en ejecución
+logs/
+*.log
+*.csv
+
+# Sistema operativo / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,34 @@
+# Este .gitignore cubre patrones comunes a ambas implementaciones.
+# python/ y cpp/ no llevan .gitignore propio redundante salvo que
+# necesiten algo específico (cpp/ lo tiene, para third_party/snap7/).
+
+# --- Python ---
+venv_plc/
+venv/
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+config.local.py
+
+# --- C++ ---
+build/
+*.o
+*.obj
+*.exe
+*.out
+
+# --- Datos generados en ejecución (ambas versiones) ---
+logs/
+*.log
+*.csv
+
+# --- Configuración local con datos reales (NUNCA subir) ---
+config.json
+
+# --- Sistema operativo / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
