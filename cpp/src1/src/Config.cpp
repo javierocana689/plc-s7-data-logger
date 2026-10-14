@@ -1,7 +1,4 @@
-// Config.cpp — Implementación de la carga de configuración desde JSON.
-//
-// Usa la librería nlohmann/json (un header único, estándar de facto en C++).
-// La validación de campos obligatorios vive aquí: equivale a config_validator.py.
+// Config.cpp — Carga de configuración desde JSON (versión 1: sin validador separado).
 #include "Config.h"
 
 #include <fstream>
@@ -13,7 +10,6 @@ using json = nlohmann::json;
 
 namespace {
 
-// Comprueba que un objeto JSON contenga una clave; si no, lanza un error claro.
 void exigirClave(const json& obj, const std::string& clave, const std::string& contexto) {
     if (!obj.contains(clave)) {
         throw std::runtime_error("Falta el campo obligatorio '" + clave + "' en " + contexto);
@@ -30,14 +26,12 @@ AppConfig cargarConfig(const std::string& ruta) {
 
     json datos;
     try {
-        fichero >> datos;  // Parseo del JSON
+        fichero >> datos;
     } catch (const json::parse_error& e) {
         throw std::runtime_error(std::string("JSON invalido: ") + e.what());
     }
 
     AppConfig config;
-
-    // Parámetros globales (con valores por defecto si no aparecen).
     config.intervalo = datos.value("intervalo", 1.0);
     config.intervalo_reconexion = datos.value("intervalo_reconexion", 5.0);
     config.modo_simulacion = datos.value("modo_simulacion", false);
@@ -47,7 +41,6 @@ AppConfig cargarConfig(const std::string& ruta) {
     int indicePlc = 0;
     for (const auto& plcJson : datos["plcs"]) {
         const std::string ctxPlc = "el PLC #" + std::to_string(indicePlc);
-
         exigirClave(plcJson, "ip", ctxPlc);
         exigirClave(plcJson, "senales", ctxPlc);
 
@@ -55,12 +48,10 @@ AppConfig cargarConfig(const std::string& ruta) {
         plc.ip = plcJson["ip"].get<std::string>();
         plc.rack = plcJson.value("rack", 0);
         plc.slot = plcJson.value("slot", 1);
-        plc.password = plcJson.value("password", "");
 
         int indiceSenal = 0;
         for (const auto& senalJson : plcJson["senales"]) {
             const std::string ctxSenal = ctxPlc + " senal #" + std::to_string(indiceSenal);
-
             exigirClave(senalJson, "nombre", ctxSenal);
             exigirClave(senalJson, "db", ctxSenal);
             exigirClave(senalJson, "offset", ctxSenal);
@@ -72,7 +63,6 @@ AppConfig cargarConfig(const std::string& ruta) {
             senal.offset = senalJson["offset"].get<int>();
             senal.bytes = senalJson["bytes"].get<int>();
             plc.senales.push_back(senal);
-
             ++indiceSenal;
         }
 

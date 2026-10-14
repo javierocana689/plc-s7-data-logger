@@ -1,0 +1,18 @@
+{
+    "intervalo": 1.0,
+    "intervalo_reconexion": 5.0,
+    "modo_simulacion": false,
+
+    "plcs": [
+        {
+            "ip": "192.168.0.**",
+            "rack": 0,
+            "slot": 1,
+            "senales": [
+                { "nombre": "Temperatura", "db": 1, "offset": 0, "bytes": 4 },
+                { "nombre": "Velocidad",   "db": 1, "offset": 4, "bytes": 4 },
+                { "nombre": "Presion",     "db": 1, "offset": 8, "bytes": 4 }
+            ]
+        }
+    ]
+}

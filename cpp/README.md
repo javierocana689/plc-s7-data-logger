@@ -5,33 +5,37 @@ Lee señales de los PLCs mediante el protocolo **S7comm** (sobre TCP/IP, puerto 
 usando la librería nativa [**snap7**](https://snap7.sourceforge.net/) y las guarda
 en ficheros CSV diarios, uno por PLC.
 
-Es la versión en C++ de [mi logger original en Python](../python/README.md), reescrita para demostrar
-el mismo sistema en un lenguaje compilado y de más bajo nivel. La arquitectura es
-equivalente a la versión más avanzada de aquel proyecto: cada PLC corre en su propio
-hilo autónomo, con reconexión automática y lectura de bloque optimizada.
+Es la versión en C++ de [mi logger original en Python](../python/README.md),
+reescrita para demostrar el mismo sistema en un lenguaje compilado y de más
+bajo nivel, hablando directamente con la librería nativa de snap7.
 
 ---
 
 ## ⚠️ Nota de seguridad
 
-Repositorio **público**: no contiene datos reales. La configuración de ejemplo
-(`config.example.json`) lleva la IP enmascarada (`192.168.0.**`) y la contraseña
-como marcador (`CAMBIAR_POR_TU_PASSWORD`). Tu `config.json` real —con la IP y la
-contraseña verdaderas— está en el `.gitignore` y **nunca** debe subirse.
+Repositorio **público**: ningún `config.json` con datos reales está
+versionado. Cada `config.example.json` lleva la IP enmascarada
+(`192.168.0.**`) y la contraseña como marcador (`CAMBIAR_POR_TU_PASSWORD`).
+Tu `config.json` real está en el `.gitignore` y **nunca** debe subirse.
 
 ---
 
-## Arquitectura
+## Evolución del código
 
-| Módulo | Responsabilidad |
-|---|---|
-| `Config.h/.cpp`       | Define las estructuras (`PlcConfig`, `Senal`…) y carga/valida el `config.json`. |
-| `Logger.h/.cpp`       | Logging seguro entre hilos a consola y a fichero rotativo (1 MB × 3). |
-| `FileManager.h/.cpp`  | Escribe los CSV diarios por PLC en `logs/AAAA-MM-DD/<ip>.csv`. |
-| `PlcReader.h/.cpp`    | Hilo autónomo por PLC: conexión, reconexión, polling y desconexión. |
-| `main.cpp`            | Arranca un hilo por PLC y gestiona el apagado ordenado con `Ctrl+C`. |
+Igual que en la versión Python, cada carpeta es una iteración del proyecto,
+con la **misma progresión** de una versión a la siguiente:
 
-### De Python a C++
+| Carpeta          | Qué introduce (equivalente a su versión en Python) |
+|------------------|------------------------------------------------------|
+| `src1`           | Primera versión funcional: cliente conectado desde `main`, lectura señal a señal, sin logging (solo `std::cout`), sin validador conectado. |
+| `src1_2`         | Añade el módulo `Logger` (consola + fichero rotativo) y `ConfigValidator` (lanza excepción si falta un campo). Fusiona lector+cliente en una sola lista `Conexion`. |
+| `src2`           | Optimiza la lectura: una sola llamada a `DBRead` por bloque en vez de una por señal. |
+| `src2_security`  | Añade el campo `password` a la configuración y un primer intento (no funcional) de enviarlo tras conectar — igual que el intento fallido con `set_connection_params` en Python. |
+| `src3`           | Versión más avanzada: `PlcReader` totalmente autónomo (crea y gestiona su propio `TS7Client`), reconexión automática, señales agrupadas por DB, y el envío de contraseña ahora correcto (`SetSessionPassword`). El validador pasa a devolver `bool` en vez de lanzar excepción. |
+
+La versión de referencia es **`src3`**.
+
+### De Python a C++ (en todas las versiones)
 
 | En la versión Python | Aquí (C++) |
 |---|---|
@@ -40,48 +44,49 @@ contraseña verdaderas— está en el `.gitignore` y **nunca** debe subirse.
 | `threading.Thread` + `threading.Event` | `std::thread` + `std::atomic<bool>` |
 | `snap7.util.get_real()` | `getRealAt()` (byteswap big-endian → `float`) |
 | módulo `logging` | clase `Logger` (singleton + `std::mutex`) |
-| `itertools.groupby` por DB | agrupación con `std::map<int, ...>` |
-
-> Detalle: el paso de la contraseña usa `SetSessionPassword()`, que es la forma
-> correcta en snap7 (en la versión Python se intentó con `set_connection_params`,
-> que no era funcional).
+| `itertools.groupby` por DB (solo en `src3`) | agrupación con `std::map<int, ...>` |
 
 ## Dependencias
 
 - Un compilador con **C++17** (MSVC, g++ o clang) y **CMake ≥ 3.15**.
-- **nlohmann/json** — se descarga sola al compilar (vía `FetchContent`).
-- **snap7** (nativo) — la pones tú en `third_party/snap7/`. Ver
+- **nlohmann/json** — se descarga sola al compilar (vía `FetchContent`), en cada subproyecto.
+- **snap7** (nativo) — la pones tú **una sola vez** en `third_party/snap7/`
+  (se comparte entre las 5 versiones). Ver
   [`third_party/snap7/README.md`](third_party/snap7/README.md).
 
-## Compilación
+## Compilación y uso
+
+Cada carpeta (`src1`, `src1_2`, `src2`, `src2_security`, `src3`) es un
+proyecto CMake independiente, igual que cada carpeta de `python/` se ejecuta
+por separado. Para compilar y ejecutar una versión concreta:
 
 ```bash
+cd src3                       # o src1, src1_2, src2, src2_security
 cmake -S . -B build
 cmake --build build
 ```
 
-El ejecutable queda en `build/` (p. ej. `build/plc_logger` o `build/Debug/plc_logger.exe`).
-En Windows, la `snap7.dll` se copia automáticamente junto al `.exe`.
+El ejecutable queda en `build/` (p. ej. `build/plc_logger_src3` en Linux, o
+`build/Debug/plc_logger_src3.exe` en Windows con `snap7.dll` copiada junto a él).
 
-## Uso
-
-1. Copia `config.example.json` a `config.json` y pon los datos reales de tu PLC.
+1. Copia `config.example.json` a `config.json` dentro de esa misma carpeta y
+   pon los datos reales de tu PLC.
 2. Ejecuta (la ruta del config es opcional; por defecto `config.json`):
 
 ```bash
-./plc_logger            # usa ./config.json
-./plc_logger otra.json  # usa otra ruta
+./build/plc_logger_src3            # usa ./config.json
+./build/plc_logger_src3 otra.json  # usa otra ruta
 ```
 
-3. Los datos se guardan en `logs/AAAA-MM-DD/<ip>.csv`. Para en cualquier momento con `Ctrl+C`.
+Los datos se guardan en `logs/AAAA-MM-DD/<ip>.csv`. Para en cualquier momento con `Ctrl+C`.
 
 ## Modo simulación (probar sin PLC)
 
-Para ver el sistema funcionando sin un PLC físico, pon `"modo_simulacion": true`
-en el `config.json`. En ese modo no se conecta a ningún equipo: genera valores
-sintéticos y los escribe en el CSV, útil para probar el logging, los hilos y la
-generación de ficheros. (Nota: sigue necesitando snap7 para **compilar**, solo
-que no lo usa para leer.)
+Todas las versiones aceptan `"modo_simulacion": true` en el `config.json`:
+no se conecta a ningún equipo, genera valores sintéticos y los escribe en el
+CSV. Útil para probar el logging, los hilos y la generación de ficheros sin
+hardware real. (Sigue necesitando snap7 para **compilar**, solo que no lo usa
+para leer.)
 
 ## Posibles mejoras
 

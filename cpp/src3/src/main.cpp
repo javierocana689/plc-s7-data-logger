@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "Config.h"
+#include "ConfigValidator.h"
 #include "FileManager.h"
 #include "Logger.h"
 #include "PlcReader.h"
@@ -40,6 +41,11 @@ int main(int argc, char** argv) {
         config = cargarConfig(rutaConfig);
     } catch (const std::exception& e) {
         logger().critical(std::string("Error en configuracion: ") + e.what());
+        return 1;
+    }
+
+    if (!validarConfig(config)) {
+        logger().critical("Error en configuracion. Saliendo.");
         return 1;
     }
 
